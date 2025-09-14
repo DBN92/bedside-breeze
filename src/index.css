@@ -2,43 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Medical Care Management System - Design System
+All colors MUST be HSL for consistent theming
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Medical theme - Professional blues and healthcare colors */
+    --background: 220 15% 97%;
+    --foreground: 220 20% 10%;
 
+    /* Glass morphism backgrounds */
+    --glass-background: 220 15% 98%;
+    --glass-border: 220 15% 85%;
+    
+    /* Cards with subtle elevation */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 20% 10%;
+    --card-hover: 220 15% 99%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 20% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Medical blue theme */
+    --primary: 210 92% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 210 92% 40%;
+    --primary-light: 210 92% 95%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Success green for positive actions */
+    --secondary: 142 76% 36%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-hover: 142 76% 31%;
+    --secondary-light: 142 76% 95%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Neutral tones */
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 195 100% 45%;
+    --accent-foreground: 0 0% 100%;
+    --accent-light: 195 100% 95%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Alert colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Borders and inputs */
+    --border: 220 15% 85%;
+    --input: 220 15% 92%;
+    --ring: 210 92% 45%;
 
-    --radius: 0.5rem;
+    /* Gradients for modern medical UI */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(142 76% 45%));
+    --gradient-glass: linear-gradient(135deg, hsl(var(--glass-background)), hsl(var(--card)));
+    
+    /* Shadows for depth */
+    --shadow-card: 0 4px 12px -2px hsl(var(--primary) / 0.1);
+    --shadow-glass: 0 8px 32px -8px hsl(var(--primary) / 0.15);
+    
+    /* Animation properties */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    --sidebar-background: 0 0% 98%;
+    --radius: 0.75rem;
+
+    /* Sidebar customization for medical theme */
+    --sidebar-background: hsl(var(--card));
 
     --sidebar-foreground: 240 5.3% 26.1%;
 
@@ -100,6 +132,37 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* Glass morphism card effects */
+  .glass-card {
+    @apply backdrop-blur-sm border border-border/50;
+    background: var(--gradient-glass);
+    box-shadow: var(--shadow-glass);
+  }
+  
+  /* Medical dashboard cards */
+  .medical-card {
+    @apply bg-card border border-border rounded-lg;
+    box-shadow: var(--shadow-card);
+    transition: var(--transition-smooth);
+  }
+  
+  .medical-card:hover {
+    @apply bg-card-hover;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -8px hsl(var(--primary) / 0.2);
+  }
+  
+  /* Gradient backgrounds */
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-secondary {
+    background: var(--gradient-secondary);
   }
 }
