@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { CareForm } from "@/components/CareForm"
+import { usePatients } from "@/hooks/usePatients"
+import { useCareEvents } from "@/hooks/useCareEvents"
 import { 
   Heart, 
   Search, 
@@ -13,61 +15,54 @@ import {
   Droplets,
   Pill,
   Activity,
-  Utensils
+  Utensils,
+  Toilet
 } from "lucide-react"
 
 const Care = () => {
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  
+  const { patients } = usePatients()
+  const { events, addEvent } = useCareEvents()
 
-  const patients = [
-    { id: "1", name: "Maria Silva", room: "101-A", status: "Estável" },
-    { id: "2", name: "João Costa", room: "102-B", status: "Crítico" },
-    { id: "3", name: "Ana Lima", room: "103-A", status: "Recuperação" },
-  ]
-
-  const recentCareRecords = [
-    {
-      id: 1,
-      patient: "Maria Silva",
-      type: "Medicamento",
-      description: "Dipirona 500mg - Via oral",
-      time: "14:30",
-      date: "2024-01-20",
-      icon: Pill,
-      color: "text-accent"
-    },
-    {
-      id: 2,
-      patient: "João Costa",
-      type: "Líquidos",
-      description: "Água - 200ml",
-      time: "14:15",
-      date: "2024-01-20",
-      icon: Droplets,
-      color: "text-primary"
-    },
-    {
-      id: 3,
-      patient: "Ana Lima",
-      type: "Débito de Dreno",
-      description: "Dreno abdominal - 50ml",
-      time: "14:00",
-      date: "2024-01-20",
-      icon: Activity,
-      color: "text-secondary"
-    },
-    {
-      id: 4,
-      patient: "Maria Silva",
-      type: "Alimentação",
-      description: "Almoço - 80% consumido",
-      time: "13:30",
-      date: "2024-01-20",
-      icon: Utensils,
-      color: "text-warning"
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'drink': return Droplets
+      case 'med': return Pill
+      case 'note': return Activity
+      case 'meal': return Utensils
+      case 'bathroom': return Toilet
+      default: return Heart
     }
-  ]
+  }
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'drink': return 'text-primary'
+      case 'med': return 'text-accent'
+      case 'note': return 'text-secondary'
+      case 'meal': return 'text-warning'
+      case 'bathroom': return 'text-muted-foreground'
+      default: return 'text-foreground'
+    }
+  }
+
+  const getTypeName = (type: string) => {
+    switch (type) {
+      case 'drink': return 'Líquidos'
+      case 'med': return 'Medicamento'
+      case 'note': return 'Anotação'
+      case 'meal': return 'Alimentação'
+      case 'bathroom': return 'Banheiro'
+      default: return type
+    }
+  }
+
+  const filteredPatients = patients.filter(patient =>
+    patient.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.bed.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
     <div className="space-y-6">
@@ -114,7 +109,7 @@ const Care = () => {
               </div>
               
               <div className="space-y-2">
-                {patients.map((patient) => (
+                {filteredPatients.map((patient) => (
                   <div
                     key={patient.id}
                     className={`p-3 border rounded-lg cursor-pointer transition-all ${
@@ -126,14 +121,14 @@ const Care = () => {
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-foreground">{patient.name}</p>
-                        <p className="text-sm text-muted-foreground">Quarto {patient.room}</p>
+                        <p className="font-medium text-foreground">{patient.full_name}</p>
+                        <p className="text-sm text-muted-foreground">Leito {patient.bed}</p>
                       </div>
                       <Badge 
-                        variant={patient.status === 'Crítico' ? 'destructive' : 'secondary'}
+                        variant={patient.notes?.includes('crítico') ? 'destructive' : 'secondary'}
                         className="text-xs"
                       >
-                        {patient.status}
+                        {patient.notes?.includes('crítico') ? 'Crítico' : 'Estável'}
                       </Badge>
                     </div>
                   </div>
@@ -148,9 +143,27 @@ const Care = () => {
           {selectedPatient ? (
             <CareForm 
               patientId={selectedPatient}
-              onSave={(data) => {
-                console.log("Care data saved:", data)
-                // Aqui você implementaria a lógica de salvamento
+              onSave={async (data) => {
+                try {
+                  const eventType = data.type === 'liquid' ? 'drink' :
+                                  data.type === 'medication' ? 'med' :
+                                  data.type === 'drainage' ? 'note' :
+                                  data.type as 'drink' | 'meal' | 'med' | 'bathroom' | 'note'
+                  
+                  await addEvent({
+                    patient_id: selectedPatient!,
+                    type: eventType,
+                    occurred_at: new Date().toISOString(),
+                    volume_ml: data.volume_ml,
+                    meal_desc: data.meal_desc,
+                    med_name: data.med_name,
+                    med_dose: data.med_dose,
+                    bathroom_type: data.bathroom_type,
+                    notes: data.notes
+                  })
+                } catch (error) {
+                  console.error("Erro ao salvar:", error)
+                }
               }}
             />
           ) : (
@@ -190,26 +203,44 @@ const Care = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentCareRecords.map((record) => (
-              <div key={record.id} className="flex items-center gap-4 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                <div className={`p-2 rounded-lg bg-muted ${record.color}`}>
-                  <record.icon className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-medium text-foreground">{record.type}</p>
-                    <Badge variant="outline" className="text-xs">
-                      {record.patient}
-                    </Badge>
+            {events.slice(0, 10).map((event) => {
+              const patient = patients.find(p => p.id === event.patient_id)
+              const Icon = getTypeIcon(event.type)
+              const description = event.type === 'drink' ? `${event.volume_ml}ml` :
+                               event.type === 'med' ? `${event.med_name} - ${event.med_dose}` :
+                               event.type === 'note' ? event.notes || 'Anotação' :
+                               event.type === 'meal' ? event.meal_desc :
+                               event.type === 'bathroom' ? event.bathroom_type :
+                               event.notes || 'Sem descrição'
+              
+              return (
+                <div key={event.id} className="flex items-center gap-4 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className={`p-2 rounded-lg bg-muted ${getTypeColor(event.type)}`}>
+                    <Icon className="h-5 w-5" />
                   </div>
-                  <p className="text-sm text-muted-foreground">{record.description}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-medium text-foreground">{getTypeName(event.type)}</p>
+                      <Badge variant="outline" className="text-xs">
+                        {patient?.full_name || 'Paciente removido'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{description}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-foreground">
+                      {new Date(event.occurred_at).toLocaleTimeString('pt-BR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(event.occurred_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-foreground">{record.time}</p>
-                  <p className="text-xs text-muted-foreground">{record.date}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </CardContent>
       </Card>

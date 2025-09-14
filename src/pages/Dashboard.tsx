@@ -1,6 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { usePatients } from "@/hooks/usePatients"
+import { useCareEvents } from "@/hooks/useCareEvents"
+import { useNavigate } from "react-router-dom"
 import { 
   Users, 
   Activity, 
@@ -13,67 +16,70 @@ import {
 } from "lucide-react"
 
 const Dashboard = () => {
+  const navigate = useNavigate()
+  const { patients, loading: patientsLoading } = usePatients()
+  const { events, getTodayStats } = useCareEvents()
+  
+  const todayStats = getTodayStats()
+  const activePatientsCount = patients.length
+  const criticalPatients = patients.filter(p => p.notes?.toLowerCase().includes('crítico')).length
+
   const stats = [
     {
       title: "Pacientes Ativos",
-      value: "24",
+      value: activePatientsCount.toString(),
       description: "Pacientes internados hoje",
       icon: Users,
       color: "bg-primary",
-      change: "+2 desde ontem"
+      change: "+2 desde ontem",
+      onClick: () => navigate('/patients')
     },
     {
       title: "Cuidados Registrados",
-      value: "156",
+      value: todayStats.total.toString(),
       description: "Registros nas últimas 24h",
       icon: Activity,
       color: "bg-secondary",
-      change: "+18 desde ontem"
+      change: "+18 desde ontem",
+      onClick: () => navigate('/care')
     },
     {
       title: "Medicamentos",
-      value: "89",
+      value: todayStats.medications.toString(),
       description: "Doses administradas hoje",
       icon: Pill,
       color: "bg-accent",
-      change: "+12 desde ontem"
+      change: "+12 desde ontem",
+      onClick: () => navigate('/care')
     },
     {
       title: "Alertas Pendentes",
-      value: "3",
+      value: criticalPatients.toString(),
       description: "Requerem atenção",
       icon: AlertTriangle,
       color: "bg-warning",
-      change: "-1 desde ontem"
+      change: "-1 desde ontem",
+      onClick: () => navigate('/patients')
     }
   ]
 
-  const recentPatients = [
-    {
-      id: 1,
-      name: "Maria Silva",
-      room: "101-A",
-      status: "Estável",
-      lastCare: "10:30",
-      priority: "Normal"
-    },
-    {
-      id: 2,
-      name: "João Santos",
-      room: "102-B",
-      status: "Crítico",
-      lastCare: "09:45",
-      priority: "Alta"
-    },
-    {
-      id: 3,
-      name: "Ana Costa",
-      room: "103-A",
-      status: "Recuperação",
-      lastCare: "11:15",
-      priority: "Normal"
+  const recentPatients = patients.slice(0, 3).map(patient => {
+    const lastEvent = events.find(e => e.patient_id === patient.id)
+    const age = patient.birth_date ? 
+      new Date().getFullYear() - new Date(patient.birth_date).getFullYear() : 0
+    
+    return {
+      id: patient.id,
+      name: patient.full_name,
+      room: patient.bed,
+      status: patient.notes?.toLowerCase().includes('crítico') ? 'Crítico' : 'Estável',
+      lastCare: lastEvent ? new Date(lastEvent.occurred_at).toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }) : '--:--',
+      priority: patient.notes?.toLowerCase().includes('crítico') ? 'Alta' : 'Normal'
     }
-  ]
+  })
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -91,7 +97,7 @@ const Dashboard = () => {
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground">Visão geral dos cuidados hospitalares</p>
         </div>
-        <Button variant="medical">
+        <Button variant="medical" onClick={() => navigate('/care')}>
           <Activity className="h-4 w-4 mr-2" />
           Novo Registro
         </Button>
@@ -100,7 +106,11 @@ const Dashboard = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
-          <Card key={index} className="medical-card">
+          <Card 
+            key={index} 
+            className="medical-card cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
+            onClick={stat.onClick}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.title}
@@ -173,19 +183,19 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button variant="outline" className="w-full justify-start" size="lg">
+            <Button variant="outline" className="w-full justify-start" size="lg" onClick={() => navigate('/care')}>
               <Droplets className="h-5 w-5 mr-3 text-accent" />
               Registrar Líquidos
             </Button>
-            <Button variant="outline" className="w-full justify-start" size="lg">
+            <Button variant="outline" className="w-full justify-start" size="lg" onClick={() => navigate('/care')}>
               <Pill className="h-5 w-5 mr-3 text-secondary" />
               Administrar Medicamento
             </Button>
-            <Button variant="outline" className="w-full justify-start" size="lg">
+            <Button variant="outline" className="w-full justify-start" size="lg" onClick={() => navigate('/care')}>
               <Heart className="h-5 w-5 mr-3 text-primary" />
               Verificar Sinais Vitais
             </Button>
-            <Button variant="outline" className="w-full justify-start" size="lg">
+            <Button variant="outline" className="w-full justify-start" size="lg" onClick={() => navigate('/care')}>
               <Activity className="h-5 w-5 mr-3 text-accent" />
               Débito de Dreno
             </Button>
